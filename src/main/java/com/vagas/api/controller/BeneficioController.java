@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
 import reactor.core.publisher.Mono;
+import com.vagas.api.exceptionhandler.Error;
 
 import javax.validation.Valid;
 
@@ -35,12 +36,44 @@ public class BeneficioController {
     }
 
     @PostMapping
-    @ResponseBody
     public DeferredResult<?> salvar(@RequestBody @Valid BeneficioInput beneficioInput) {
         DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
         this.beneficioService.salvar(modelMapper.toDomainObject(beneficioInput))
                 .doOnError(error -> log.error("Erro em BeneficioController.salvar() ao tentar salvar o benefício", error))
                 .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)));
+        return deferredResult;
+    }
+
+    @GetMapping("/{id}")
+    public DeferredResult<?> findById(@PathVariable("id") Long id) {
+        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+        beneficioService.buscarOuFalhar(id)
+                .doOnError(error -> Error.erroDeNegocio(deferredResult, error, HttpStatus.NOT_FOUND))
+                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)));
+        return deferredResult;
+    }
+
+    @PutMapping("/{id}")
+    public DeferredResult<?> atualizar(@PathVariable("id") Long id,
+                                       @RequestBody @Valid BeneficioInput beneficioInput) {
+        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+        beneficioService.buscarOuFalhar(id)
+                .subscribe(response -> beneficioService.update(beneficioInput, response)
+                        .subscribe(beneficioSalvo ->
+                                deferredResult.setResult(new ResponseEntity<>(beneficioSalvo, HttpStatus.OK))));
+        return deferredResult;
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public DeferredResult<?> remover(@PathVariable Long id) {
+        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+        beneficioService.excluir(id)
+                .doOnError(error -> {
+                    Error.erroDeNegocio(deferredResult, error, HttpStatus.BAD_REQUEST);
+                    log.error("Erro ao tentar excluído o benefício!", error);
+                })
+                .subscribe(data -> log.info("Benefício excluído com sucesso!"));
         return deferredResult;
     }
 
