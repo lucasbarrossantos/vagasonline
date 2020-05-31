@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class VagasApplication {
 
 	public static void main(String[] args) {
+		//TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 		SpringApplication.run(VagasApplication.class, args);
 	}
 

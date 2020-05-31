@@ -1,4 +1,4 @@
-package com.vagas.model.domain;
+package com.vagas.domain.model;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
