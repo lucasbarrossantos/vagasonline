@@ -17,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
 import reactor.core.publisher.Mono;
-import com.vagas.api.exceptionhandler.Error;
 
 import javax.validation.Valid;
 
@@ -39,8 +38,12 @@ public class BeneficioController {
     public DeferredResult<?> salvar(@RequestBody @Valid BeneficioInput beneficioInput) {
         DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
         this.beneficioService.salvar(modelMapper.toDomainObject(beneficioInput))
-                .doOnError(error -> log.error("Erro em BeneficioController.salvar() ao tentar salvar o benefício", error))
-                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)));
+                .doOnError(error -> log.error("Erro em BeneficioController.salvar() ao tentar salvar o benefício"))
+                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
+                        error -> {
+                            log.error("Erro em BeneficioController.salvar() ao tentar salvar o benefício");
+                            deferredResult.setErrorResult(error);
+                        });
         return deferredResult;
     }
 
@@ -48,8 +51,8 @@ public class BeneficioController {
     public DeferredResult<?> findById(@PathVariable("id") Long id) {
         DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
         beneficioService.buscarOuFalhar(id)
-                .doOnError(error -> Error.erroDeNegocio(deferredResult, error, HttpStatus.NOT_FOUND))
-                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)));
+                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
+                        deferredResult::setErrorResult);
         return deferredResult;
     }
 
@@ -59,8 +62,10 @@ public class BeneficioController {
         DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
         beneficioService.buscarOuFalhar(id)
                 .subscribe(response -> beneficioService.update(beneficioInput, response)
-                        .subscribe(beneficioSalvo ->
-                                deferredResult.setResult(new ResponseEntity<>(beneficioSalvo, HttpStatus.OK))));
+                                .subscribe(beneficioSalvo ->
+                                                deferredResult.setResult(new ResponseEntity<>(beneficioSalvo, HttpStatus.OK)),
+                                        deferredResult::setErrorResult)
+                        , deferredResult::setErrorResult);
         return deferredResult;
     }
 
@@ -69,11 +74,10 @@ public class BeneficioController {
     public DeferredResult<?> remover(@PathVariable Long id) {
         DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
         beneficioService.excluir(id)
-                .doOnError(error -> {
-                    Error.erroDeNegocio(deferredResult, error, HttpStatus.BAD_REQUEST);
-                    log.error("Erro ao tentar excluído o benefício!", error);
-                })
-                .subscribe(data -> log.info("Benefício excluído com sucesso!"));
+                .subscribe(data -> log.info("Benefício excluído com sucesso!"), error -> {
+                    log.error("Erro ao tentar excluir o benefício. BeneficioController.remover()");
+                    deferredResult.setErrorResult(error);
+                });
         return deferredResult;
     }
 

@@ -5,7 +5,6 @@ import com.vagas.api.model.input.BeneficioInput;
 import com.vagas.api.modelmapper.BeneficioModelMapper;
 import com.vagas.domain.exception.BeneficioNaoEncontradoException;
 import com.vagas.domain.exception.EntidadeEmUsoException;
-import com.vagas.domain.exception.NegocioException;
 import com.vagas.domain.model.Beneficio;
 import com.vagas.domain.repository.BeneficioRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,9 +47,13 @@ public class BeneficioService {
     }
 
     public Mono<Beneficio> buscarOuFalhar(Long id) {
-        return Mono.just(beneficioRepository.findById(id))
-                .flatMap(beneficio -> beneficio.map(Mono::just)
-                        .orElseThrow(() -> new BeneficioNaoEncontradoException(id)));
+        return Mono.fromCallable(() -> beneficioRepository.findById(id)
+                .orElseThrow(() -> {
+                            log.error(String
+                                    .format("Erro em BeneficioController.buscarOuFalhar(?) ao tentar buscar o benefício de código %d", id));
+                            return new BeneficioNaoEncontradoException(id);
+                        }
+                ));
     }
 
     public Mono<Beneficio> update(BeneficioInput beneficioInput, Beneficio beneficio) {
@@ -65,9 +68,11 @@ public class BeneficioService {
                 beneficioRepository.deleteById(id);
                 beneficioRepository.flush();
             } catch (EmptyResultDataAccessException e) {
+                log.error(String.format("Erro ao tentar excluir o benefício! BeneficioService.excluir(?), nenhum benefício encontrado com o id %s", id));
                 throw new BeneficioNaoEncontradoException(id);
 
             } catch (DataIntegrityViolationException e) {
+                log.error("Erro ao tentar excluir o benefício! BeneficioService.excluir(?), violação de chave primária, id não encontrado no Banco de Dados");
                 throw new EntidadeEmUsoException(
                         String.format(MSG_BENEFICIO_EM_USO, id));
             }
