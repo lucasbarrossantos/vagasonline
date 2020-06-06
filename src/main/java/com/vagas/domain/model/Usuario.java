@@ -17,7 +17,7 @@ public class Usuario {
 
     @Column(length = 100)
     private String login;
-    @Column(length = 150)
+    @Column(length = 150, unique = true)
     private String email;
     private String senha;
     private String confirmarSenha;

@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +29,7 @@ public class BeneficioController {
     private final BeneficioModelMapper modelMapper;
 
     @GetMapping
-    public Mono<Page<BeneficioModel>> findAll(@PageableDefault(size = 2) Pageable pageable) {
+    public Mono<Page<BeneficioModel>> findAll(Pageable pageable) {
         return beneficioService.listarTodos(pageable);
     }
 
