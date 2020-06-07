@@ -1,0 +1,14 @@
+package com.vagas.domain.exception;
+
+public class EmpresaNaoEncontradaException extends EntidadeNaoEncontradaException {
+
+    public EmpresaNaoEncontradaException(String mensagem) {
+        super(mensagem);
+    }
+
+    public EmpresaNaoEncontradaException(Long id) {
+        this(String.format("Erro ao tentar buscar a empresa com código %d. " +
+                "Não existe um registro com esse id!", id));
+    }
+
+}

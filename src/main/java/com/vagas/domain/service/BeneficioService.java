@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -34,16 +34,20 @@ public class BeneficioService {
     private final BeneficioModelMapper modelMapper;
 
     @Transactional
-    public Mono<Beneficio> salvar(final Beneficio beneficio) {
+    public Mono<BeneficioModel> salvar(final Beneficio beneficio) {
         return Mono
                 .fromSupplier(() -> beneficioRepository.save(beneficio))
+                .map(modelMapper::toModel)
                 .doOnError(error -> log.error("Erro em BeneficioService.salvar() ao tentar salvar o benefício", error));
     }
 
     public Mono<Page<BeneficioModel>> listarTodos(Pageable pageable) {
-        return Mono.fromSupplier(beneficioRepository.findAll(pageable))
-                .map(beneficioStream -> modelMapper.toCollectionModel(beneficioStream.collect(Collectors.toList())))
-                .map(beneficioModels -> new PageImpl<>(beneficioModels, pageable, beneficioModels.size()));
+        return Mono.fromSupplier(() -> beneficioRepository.findAll(pageable))
+                .map(beneficioPage -> {
+                    List<BeneficioModel> empresaResumo = modelMapper
+                            .toCollectionModel(beneficioPage.getContent());
+                    return new PageImpl<>(empresaResumo, pageable, beneficioPage.getTotalElements());
+                });
     }
 
     public Mono<Beneficio> buscarOuFalhar(Long id) {
@@ -56,14 +60,14 @@ public class BeneficioService {
                 ));
     }
 
-    public Mono<Beneficio> update(BeneficioInput beneficioInput, Beneficio beneficio) {
+    public Mono<BeneficioModel> update(BeneficioInput beneficioInput, Beneficio beneficio) {
         modelMapper.copyToDomainObject(beneficioInput, beneficio);
         return salvar(beneficio);
     }
 
     @Transactional
-    public Mono<Void> excluir(Long id) {
-        return Mono.fromRunnable(() -> {
+    public Mono<Boolean> excluir(Long id) {
+        return Mono.fromCallable(() -> {
             try {
                 beneficioRepository.deleteById(id);
                 beneficioRepository.flush();
@@ -76,6 +80,8 @@ public class BeneficioService {
                 throw new EntidadeEmUsoException(
                         String.format(MSG_BENEFICIO_EM_USO, id));
             }
+
+            return Boolean.TRUE;
         });
     }
 }

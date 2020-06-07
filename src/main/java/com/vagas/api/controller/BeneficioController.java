@@ -39,10 +39,7 @@ public class BeneficioController {
         this.beneficioService.salvar(modelMapper.toDomainObject(beneficioInput))
                 .doOnError(error -> log.error("Erro em BeneficioController.salvar() ao tentar salvar o benefício"))
                 .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
-                        error -> {
-                            log.error("Erro em BeneficioController.salvar() ao tentar salvar o benefício");
-                            deferredResult.setErrorResult(error);
-                        });
+                        deferredResult::setErrorResult);
         return deferredResult;
     }
 
@@ -50,7 +47,8 @@ public class BeneficioController {
     public DeferredResult<?> findById(@PathVariable("id") Long id) {
         DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
         beneficioService.buscarOuFalhar(id)
-                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
+                .subscribe(response -> deferredResult
+                                .setResult(new ResponseEntity<>(modelMapper.toModel(response), HttpStatus.OK)),
                         deferredResult::setErrorResult);
         return deferredResult;
     }
