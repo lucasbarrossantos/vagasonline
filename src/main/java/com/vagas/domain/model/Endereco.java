@@ -36,4 +36,7 @@ public class Endereco {
     @Column(length = 2, nullable = false)
     private String uf;
 
+    @OneToOne(mappedBy = "endereco")
+    private Empresa empresa;
+
 }

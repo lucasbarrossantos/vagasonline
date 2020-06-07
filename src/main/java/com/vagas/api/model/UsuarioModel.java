@@ -7,6 +7,7 @@ import lombok.Setter;
 @Setter
 public class UsuarioModel {
 
+    private Long id;
     private String login;
     private String email;
     private String senha;

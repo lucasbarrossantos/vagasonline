@@ -3,9 +3,9 @@ package com.vagas.domain.service;
 import com.vagas.api.model.UsuarioModel;
 import com.vagas.api.model.input.UsuarioInput;
 import com.vagas.api.modelmapper.UsuarioModelMapper;
+import com.vagas.domain.exception.EntidadeEmUsoException;
 import com.vagas.domain.exception.NegocioException;
 import com.vagas.domain.exception.UsuarioNaoEncontradoException;
-import com.vagas.domain.exception.EntidadeEmUsoException;
 import com.vagas.domain.model.Usuario;
 import com.vagas.domain.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,29 +17,26 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.querydsl.QuerydslUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.swing.text.html.Option;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class UsuarioService {
     private final Logger log = LoggerFactory.getLogger(UsuarioService.class);
 
-    private static final String MSG_BENEFICIO_EM_USO
+    private static final String MSG_USUARIO_EM_USO
             = "Usuário de código %d não pode ser removido, pois está em uso";
 
     private final UsuarioRepository usuarioRepository;
     private final UsuarioModelMapper modelMapper;
 
     @Transactional
-    public Mono<Usuario> salvar(final Usuario usuario) {
+    public Mono<UsuarioModel> salvar(final Usuario usuario) {
         return Mono
                 .fromCallable(() -> {
                     if (usuario.getIsAtivo() == null)
@@ -58,15 +55,17 @@ public class UsuarioService {
                         throw new NegocioException("As senhas informadas não coincidem!");
                     }
 
-                    return usuarioRepository.save(usuario);
+                    return modelMapper.toModel(usuarioRepository.save(usuario));
                 })
                 .doOnError(error -> log.error("Erro em UsuarioService.salvar() ao tentar salvar o usuário", error));
     }
 
     public Mono<Page<UsuarioModel>> listarTodos(Pageable pageable) {
-        return Mono.fromSupplier(usuarioRepository.findAll(pageable))
-                .map(usuarioStream -> modelMapper.toCollectionModel(usuarioStream.collect(Collectors.toList())))
-                .map(usuarioModels -> new PageImpl<>(usuarioModels, pageable, usuarioModels.size()));
+        return Mono.fromSupplier(() -> usuarioRepository.findAll(pageable))
+                .map(usuarioPage -> {
+                    List<UsuarioModel> empresaResumo = modelMapper.toCollectionModel(usuarioPage.getContent());
+                    return new PageImpl<>(empresaResumo, pageable, usuarioPage.getTotalElements());
+                });
     }
 
     public Mono<Usuario> buscarOuFalhar(Long id) {
@@ -79,14 +78,14 @@ public class UsuarioService {
                 ));
     }
 
-    public Mono<Usuario> update(UsuarioInput usuarioInput, Usuario usuario) {
+    public Mono<UsuarioModel> update(UsuarioInput usuarioInput, Usuario usuario) {
         modelMapper.copyToDomainObject(usuarioInput, usuario);
         return salvar(usuario);
     }
 
     @Transactional
-    public Mono<Void> excluir(Long id) {
-        return Mono.fromRunnable(() -> {
+    public Mono<Boolean> excluir(Long id) {
+        return Mono.fromCallable(() -> {
             try {
                 usuarioRepository.deleteById(id);
                 usuarioRepository.flush();
@@ -99,8 +98,10 @@ public class UsuarioService {
                 log.error("Erro ao tentar excluir o usuário! UsuarioService.excluir(?), " +
                         "violação de chave primária, id não encontrado no Banco de Dados");
                 throw new EntidadeEmUsoException(
-                        String.format(MSG_BENEFICIO_EM_USO, id));
+                        String.format(MSG_USUARIO_EM_USO, id));
             }
+
+            return Boolean.TRUE;
         });
     }
 }

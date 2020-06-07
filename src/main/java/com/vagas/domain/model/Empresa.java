@@ -32,7 +32,7 @@ public class Empresa {
 
     private String longitude;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     private Endereco endereco;
 
     @OneToMany(mappedBy = "empresa")

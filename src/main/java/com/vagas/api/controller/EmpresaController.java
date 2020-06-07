@@ -1,9 +1,9 @@
 package com.vagas.api.controller;
 
-import com.vagas.api.model.UsuarioModel;
-import com.vagas.api.model.input.UsuarioInput;
-import com.vagas.api.modelmapper.UsuarioModelMapper;
-import com.vagas.domain.service.UsuarioService;
+import com.vagas.api.model.EmpresaResumoModel;
+import com.vagas.api.model.input.EmpresaInput;
+import com.vagas.api.modelmapper.EmpresaModelMapper;
+import com.vagas.domain.service.EmpresaService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,26 +20,25 @@ import reactor.core.publisher.Mono;
 import javax.validation.Valid;
 
 @RestController
-@RequestMapping("/usuario")
+@RequestMapping("/empresa")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class UsuarioController {
-    private final Logger log = LoggerFactory.getLogger(UsuarioController.class);
+public class EmpresaController {
+    private final Logger log = LoggerFactory.getLogger(EmpresaController.class);
 
-    private final UsuarioService usuarioService;
-    private final UsuarioModelMapper modelMapper;
+    private final EmpresaService empresaService;
+    private final EmpresaModelMapper modelMapper;
 
     @GetMapping
-    public Mono<Page<UsuarioModel>> findAll(Pageable pageable) {
-        return usuarioService.listarTodos(pageable);
+    public Mono<Page<EmpresaResumoModel>> findAll(Pageable pageable) {
+        return empresaService.listarTodos(pageable);
     }
 
     @PostMapping
-    public DeferredResult<?> salvar(@RequestBody @Valid UsuarioInput usuarioInput) {
+    public DeferredResult<?> salvar(@RequestBody @Valid EmpresaInput empresaInput) {
         DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
-        this.usuarioService.salvar(modelMapper.toDomainObject(usuarioInput))
-                .doOnError(error -> log.error("Erro em UsuarioController.salvar() ao tentar salvar o usuário"))
-                .subscribe(response ->
-                                deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
+        this.empresaService.salvar(modelMapper.toDomainObject(empresaInput))
+                .doOnError(error -> log.error("Erro em EmpresaController.salvar() ao tentar salvar a empresa"))
+                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
                         deferredResult::setErrorResult);
         return deferredResult;
     }
@@ -47,20 +46,20 @@ public class UsuarioController {
     @GetMapping("/{id}")
     public DeferredResult<?> findById(@PathVariable("id") Long id) {
         DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
-        usuarioService.buscarOuFalhar(id)
+        empresaService.buscarOuFalhar(id)
                 .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(modelMapper.toModel(response), HttpStatus.OK)),
                         deferredResult::setErrorResult);
         return deferredResult;
     }
 
-    @PutMapping("/{id}")
-    public DeferredResult<?> atualizar(@PathVariable("id") Long id,
-                                       @RequestBody @Valid UsuarioInput usuarioInput) {
+    @PutMapping("/{id}/endereco/{enderecoId}")
+    public DeferredResult<?> atualizar(@PathVariable("id") Long id, @PathVariable("enderecoId") Long enderecoId,
+                                       @RequestBody @Valid EmpresaInput empresaInput) {
         DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
-        usuarioService.buscarOuFalhar(id)
-                .subscribe(response -> usuarioService.update(usuarioInput, response)
-                                .subscribe(usuarioSalvo ->
-                                                deferredResult.setResult(new ResponseEntity<>(usuarioSalvo, HttpStatus.OK)),
+        empresaService.buscarOuFalhar(id)
+                .subscribe(response -> empresaService.update(empresaInput, response, enderecoId)
+                                .subscribe(empresaSalvo ->
+                                                deferredResult.setResult(new ResponseEntity<>(empresaSalvo, HttpStatus.OK)),
                                         deferredResult::setErrorResult)
                         , deferredResult::setErrorResult);
         return deferredResult;
@@ -70,11 +69,9 @@ public class UsuarioController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public DeferredResult<?> remover(@PathVariable Long id) {
         DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
-        usuarioService.excluir(id)
-                .subscribe(data -> log.info("Usuário excluído com sucesso!"), error -> {
-                    log.error("Erro ao tentar excluir o usuário. UsuarioController.remover()");
-                    deferredResult.setErrorResult(error);
-                });
+        empresaService.excluir(id)
+                .subscribe(success -> deferredResult.setResult(new ResponseEntity<>("", HttpStatus.OK)),
+                        deferredResult::setErrorResult);
         return deferredResult;
     }
 
