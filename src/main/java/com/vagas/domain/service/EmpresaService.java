@@ -24,6 +24,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuple3;
 
 import java.util.List;
 
@@ -79,11 +81,21 @@ public class EmpresaService {
     }
 
     @Transactional
-    public Mono<Boolean> excluir(Long id) {
-        return Mono.fromCallable(() -> {
+    public Mono<Tuple2<Empresa, Boolean>> excluir(Long id) {
+        return buscarOuFalhar(id).zipWhen(empresa -> {
             try {
+                Endereco endereco = empresaRepository
+                        .enderecoByEmpresaId(id)
+                        .orElseThrow(() -> new EnderecoNaoEncontradoException("Endereço não encontrado!"));
+
                 empresaRepository.deleteById(id);
                 empresaRepository.flush();
+
+                if (endereco != null) {
+                    enderecoRepository.deleteById(endereco.getId());
+                    enderecoRepository.flush();
+                }
+
             } catch (EmptyResultDataAccessException e) {
                 log.error(String.format("Erro ao tentar excluir a empresa! EmpresaService.excluir(?), nenhum empresa encontrado com o id %s", id));
                 throw new EmpresaNaoEncontradaException(id);
@@ -95,7 +107,7 @@ public class EmpresaService {
                         String.format(MSG_EMPRESA_EM_USO, id));
             }
 
-            return Boolean.TRUE;
+            return Mono.just(Boolean.TRUE);
         });
     }
 
