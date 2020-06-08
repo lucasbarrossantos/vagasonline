@@ -1,6 +1,7 @@
 package com.vagas.domain.exception;
 
 public class EmpresaNaoEncontradaException extends EntidadeNaoEncontradaException {
+	private static final long serialVersionUID = 1L;
 
     public EmpresaNaoEncontradaException(String mensagem) {
         super(mensagem);

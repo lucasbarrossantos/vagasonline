@@ -1,8 +1,9 @@
 package com.vagas.domain.exception;
 
 public class BeneficioNaoEncontradoException extends EntidadeNaoEncontradaException {
+	private static final long serialVersionUID = 1L;
 
-    public BeneficioNaoEncontradoException(String mensagem) {
+	public BeneficioNaoEncontradoException(String mensagem) {
         super(mensagem);
     }
 
