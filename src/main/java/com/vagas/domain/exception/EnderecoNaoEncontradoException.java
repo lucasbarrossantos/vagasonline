@@ -1,6 +1,7 @@
 package com.vagas.domain.exception;
 
 public class EnderecoNaoEncontradoException extends EntidadeNaoEncontradaException {
+	private static final long serialVersionUID = 1L;
 
     public EnderecoNaoEncontradoException(String mensagem) {
         super(mensagem);
