@@ -9,8 +9,8 @@ import com.vagas.domain.exception.UsuarioNaoEncontradoException;
 import com.vagas.domain.model.Usuario;
 import com.vagas.domain.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -20,14 +20,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class UsuarioService {
-    private final Logger log = LoggerFactory.getLogger(UsuarioService.class);
 
     private static final String MSG_USUARIO_EM_USO
             = "Usuário de código %d não pode ser removido, pois está em uso";
@@ -57,11 +58,13 @@ public class UsuarioService {
 
                     return modelMapper.toModel(usuarioRepository.save(usuario));
                 })
+                .publishOn(Schedulers.parallel())
                 .doOnError(error -> log.error("Erro em UsuarioService.salvar() ao tentar salvar o usuário", error));
     }
 
     public Mono<Page<UsuarioModel>> listarTodos(Pageable pageable) {
         return Mono.fromSupplier(() -> usuarioRepository.findAll(pageable))
+        		.publishOn(Schedulers.elastic())
                 .map(usuarioPage -> {
                     List<UsuarioModel> empresaResumo = modelMapper.toCollectionModel(usuarioPage.getContent());
                     return new PageImpl<>(empresaResumo, pageable, usuarioPage.getTotalElements());
@@ -75,7 +78,7 @@ public class UsuarioService {
                                     .format("Erro em UsuarioController.buscarOuFalhar(?) ao tentar buscar o usuário de código %d", id));
                             return new UsuarioNaoEncontradoException(id);
                         }
-                ));
+                )).publishOn(Schedulers.elastic());
     }
 
     public Mono<UsuarioModel> update(UsuarioInput usuarioInput, Usuario usuario) {
@@ -102,6 +105,6 @@ public class UsuarioService {
             }
 
             return Boolean.TRUE;
-        });
+        }).publishOn(Schedulers.elastic());
     }
 }

@@ -12,8 +12,8 @@ import com.vagas.domain.model.Endereco;
 import com.vagas.domain.repository.EmpresaRepository;
 import com.vagas.domain.repository.EnderecoRepository;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -24,15 +24,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple2;
-import reactor.util.function.Tuple3;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class EmpresaService {
-    private final Logger log = LoggerFactory.getLogger(EmpresaService.class);
 
     private static final String MSG_EMPRESA_EM_USO
             = "Empresa de código %d não pode ser removida, pois está em uso";
@@ -51,12 +51,14 @@ public class EmpresaService {
                     vincularEnderecoAEmpresa(endereco, empresaSalvaSemEndereco);
                     return empresaRepository.save(empresaSalvaSemEndereco);
                 })
+                .publishOn(Schedulers.parallel())
                 .map(modelMapper::toModel)
                 .doOnError(error -> log.error("Erro em EmpresaService.salvar() ao tentar salvar o empresa", error));
     }
 
     public Mono<Page<EmpresaResumoModel>> listarTodos(Pageable pageable) {
         return Mono.fromSupplier(() -> empresaRepository.findAll(pageable))
+        		.subscribeOn(Schedulers.elastic())
                 .map(empresaPage -> {
                     List<EmpresaResumoModel> empresaResumo = modelMapper
                             .toCollectionResumeModel(empresaPage.getContent());
@@ -71,7 +73,7 @@ public class EmpresaService {
                                     .format("Erro em EmpresaController.buscarOuFalhar(?) ao tentar buscar o empresa de código %d", id));
                             return new EmpresaNaoEncontradaException(id);
                         }
-                ));
+                )).subscribeOn(Schedulers.elastic());
     }
 
     public Mono<EmpresaModel> update(EmpresaInput empresaInput, Empresa empresa, Long enderecoId) {
@@ -86,7 +88,7 @@ public class EmpresaService {
             try {
                 Endereco endereco = empresaRepository
                         .enderecoByEmpresaId(id)
-                        .orElseThrow(() -> new EnderecoNaoEncontradoException("Endereço não encontrado!"));
+                        .orElseThrow(() -> new EnderecoNaoEncontradoException(empresa.getEndereco().getId()));
 
                 empresaRepository.deleteById(id);
                 empresaRepository.flush();
@@ -108,7 +110,7 @@ public class EmpresaService {
             }
 
             return Mono.just(Boolean.TRUE);
-        });
+        }).subscribeOn(Schedulers.elastic());
     }
 
     private void vincularEnderecoAEmpresa(Endereco endereco, Empresa empresaSalvaSemEndereco) {
