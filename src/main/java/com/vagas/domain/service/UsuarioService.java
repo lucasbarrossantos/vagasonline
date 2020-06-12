@@ -81,6 +81,7 @@ public class UsuarioService {
                 )).publishOn(Schedulers.elastic());
     }
 
+    @Transactional
     public Mono<UsuarioModel> update(UsuarioInput usuarioInput, Usuario usuario) {
         modelMapper.copyToDomainObject(usuarioInput, usuario);
         return salvar(usuario);

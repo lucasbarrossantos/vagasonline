@@ -43,8 +43,8 @@ public class BeneficioController {
     }
 
     @PostMapping
-    public DeferredResult<?> salvar(@RequestBody @Valid BeneficioInput beneficioInput) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+    public DeferredResult<HttpEntity<BeneficioModel>> salvar(@RequestBody @Valid BeneficioInput beneficioInput) {
+        DeferredResult<HttpEntity<BeneficioModel>> deferredResult = new DeferredResult<>();
         this.beneficioService.salvar(modelMapper.toDomainObject(beneficioInput))
                 .doOnError(error -> log.error("Erro em BeneficioController.salvar() ao tentar salvar o benefício"))
                 .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
@@ -53,8 +53,8 @@ public class BeneficioController {
     }
 
     @GetMapping("/{id}")
-    public DeferredResult<?> findById(@PathVariable("id") Long id) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+    public DeferredResult<HttpEntity<BeneficioModel>> findById(@PathVariable("id") Long id) {
+        DeferredResult<HttpEntity<BeneficioModel>> deferredResult = new DeferredResult<>();
         beneficioService.buscarOuFalhar(id)
                 .subscribe(response -> deferredResult
                                 .setResult(new ResponseEntity<>(modelMapper.toModel(response), HttpStatus.OK)),
@@ -63,9 +63,9 @@ public class BeneficioController {
     }
 
     @PutMapping("/{id}")
-    public DeferredResult<?> atualizar(@PathVariable("id") Long id,
+    public DeferredResult<HttpEntity<BeneficioModel>> atualizar(@PathVariable("id") Long id,
                                        @RequestBody @Valid BeneficioInput beneficioInput) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+        DeferredResult<HttpEntity<BeneficioModel>> deferredResult = new DeferredResult<>();
         beneficioService.buscarOuFalhar(id)
                 .subscribe(response -> beneficioService.update(beneficioInput, response)
                                 .subscribe(beneficioSalvo ->
@@ -77,13 +77,10 @@ public class BeneficioController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public DeferredResult<?> remover(@PathVariable Long id) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+    public DeferredResult<HttpEntity<String>> remover(@PathVariable Long id) {
+        DeferredResult<HttpEntity<String>> deferredResult = new DeferredResult<>();
         beneficioService.excluir(id)
-                .subscribe(data -> log.info("Benefício excluído com sucesso!"), error -> {
-                    log.error("Erro ao tentar excluir o benefício. BeneficioController.remover()");
-                    deferredResult.setErrorResult(error);
-                });
+                .subscribe(data -> deferredResult.setResult(new ResponseEntity<>("", HttpStatus.OK)), deferredResult::setErrorResult);
         return deferredResult;
     }
 
