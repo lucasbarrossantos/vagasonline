@@ -57,6 +57,7 @@ public class BeneficioService {
 		})).subscribeOn(Schedulers.elastic());
 	}
 
+	@Transactional
 	public Mono<BeneficioModel> update(BeneficioInput beneficioInput, Beneficio beneficio) {
 		modelMapper.copyToDomainObject(beneficioInput, beneficio);
 		return salvar(beneficio);
@@ -79,7 +80,7 @@ public class BeneficioService {
 						"Erro ao tentar excluir o benefício! BeneficioService.excluir(?), violação de chave primária, id não encontrado no Banco de Dados");
 				throw new EntidadeEmUsoException(String.format(MSG_BENEFICIO_EM_USO, id));
 			}
-
+			
 			return Boolean.TRUE;
 		}).subscribeOn(Schedulers.elastic());
 	}

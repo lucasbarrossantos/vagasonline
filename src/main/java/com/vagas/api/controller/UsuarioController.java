@@ -43,8 +43,8 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public DeferredResult<?> salvar(@RequestBody @Valid UsuarioInput usuarioInput) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+    public DeferredResult<HttpEntity<UsuarioModel>> salvar(@RequestBody @Valid UsuarioInput usuarioInput) {
+        DeferredResult<HttpEntity<UsuarioModel>> deferredResult = new DeferredResult<>();
         this.usuarioService.salvar(modelMapper.toDomainObject(usuarioInput))
                 .doOnError(error -> log.error("Erro em UsuarioController.salvar() ao tentar salvar o usuário"))
                 .subscribe(response ->
@@ -54,8 +54,8 @@ public class UsuarioController {
     }
 
     @GetMapping("/{id}")
-    public DeferredResult<?> findById(@PathVariable("id") Long id) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+    public DeferredResult<HttpEntity<UsuarioModel>> findById(@PathVariable("id") Long id) {
+        DeferredResult<HttpEntity<UsuarioModel>> deferredResult = new DeferredResult<>();
         usuarioService.buscarOuFalhar(id)
                 .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(modelMapper.toModel(response), HttpStatus.OK)),
                         deferredResult::setErrorResult);
@@ -63,9 +63,9 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
-    public DeferredResult<?> atualizar(@PathVariable("id") Long id,
+    public DeferredResult<HttpEntity<UsuarioModel>> atualizar(@PathVariable("id") Long id,
                                        @RequestBody @Valid UsuarioInput usuarioInput) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+        DeferredResult<HttpEntity<UsuarioModel>> deferredResult = new DeferredResult<>();
         usuarioService.buscarOuFalhar(id)
                 .subscribe(response -> usuarioService.update(usuarioInput, response)
                                 .subscribe(usuarioSalvo ->
@@ -77,13 +77,10 @@ public class UsuarioController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public DeferredResult<?> remover(@PathVariable Long id) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+    public DeferredResult<HttpEntity<String>> remover(@PathVariable Long id) {
+        DeferredResult<HttpEntity<String>> deferredResult = new DeferredResult<>();
         usuarioService.excluir(id)
-                .subscribe(data -> log.info("Usuário excluído com sucesso!"), error -> {
-                    log.error("Erro ao tentar excluir o usuário. UsuarioController.remover()");
-                    deferredResult.setErrorResult(error);
-                });
+        .subscribe(data -> deferredResult.setResult(new ResponseEntity<>("", HttpStatus.OK)), deferredResult::setErrorResult);
         return deferredResult;
     }
 

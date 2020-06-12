@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 
+import com.vagas.api.model.EmpresaModel;
 import com.vagas.api.model.EmpresaResumoModel;
 import com.vagas.api.model.input.EmpresaInput;
 import com.vagas.api.modelmapper.EmpresaModelMapper;
@@ -43,8 +44,8 @@ public class EmpresaController {
     }
 
     @PostMapping
-    public DeferredResult<?> salvar(@RequestBody @Valid EmpresaInput empresaInput) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+    public DeferredResult<HttpEntity<EmpresaModel>> salvar(@RequestBody @Valid EmpresaInput empresaInput) {
+        DeferredResult<HttpEntity<EmpresaModel>> deferredResult = new DeferredResult<>();
         this.empresaService.salvar(modelMapper.toDomainObject(empresaInput))
                 .doOnError(error -> log.error("Erro em EmpresaController.salvar() ao tentar salvar a empresa"))
                 .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
@@ -53,20 +54,20 @@ public class EmpresaController {
     }
 
     @GetMapping("/{id}")
-    public DeferredResult<?> findById(@PathVariable("id") Long id) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+    public DeferredResult<HttpEntity<EmpresaModel>> findById(@PathVariable("id") Long id) {
+        DeferredResult<HttpEntity<EmpresaModel>> deferredResult = new DeferredResult<>();
         empresaService.buscarOuFalhar(id)
                 .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(modelMapper.toModel(response), HttpStatus.OK)),
                         deferredResult::setErrorResult);
         return deferredResult;
     }
 
-    @PutMapping("/{id}/endereco/{enderecoId}")
-    public DeferredResult<?> atualizar(@PathVariable("id") Long id, @PathVariable("enderecoId") Long enderecoId,
+    @PutMapping("/{id}")
+    public DeferredResult<HttpEntity<EmpresaModel>> atualizar(@PathVariable("id") Long id, 
                                        @RequestBody @Valid EmpresaInput empresaInput) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+        DeferredResult<HttpEntity<EmpresaModel>> deferredResult = new DeferredResult<>();
         empresaService.buscarOuFalhar(id)
-                .subscribe(response -> empresaService.update(empresaInput, response, enderecoId)
+                .subscribe(response -> empresaService.update(empresaInput, response)
                                 .subscribe(empresaSalvo ->
                                                 deferredResult.setResult(new ResponseEntity<>(empresaSalvo, HttpStatus.OK)),
                                         deferredResult::setErrorResult)
@@ -76,8 +77,8 @@ public class EmpresaController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public DeferredResult<?> remover(@PathVariable Long id) {
-        DeferredResult<HttpEntity<?>> deferredResult = new DeferredResult<>();
+    public DeferredResult<HttpEntity<String>> remover(@PathVariable Long id) {
+        DeferredResult<HttpEntity<String>> deferredResult = new DeferredResult<>();
         empresaService.excluir(id)
                 .subscribe(success -> deferredResult.setResult(new ResponseEntity<>("", HttpStatus.OK)),
                         deferredResult::setErrorResult);

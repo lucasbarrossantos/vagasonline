@@ -8,6 +8,7 @@ class VagasApplicationTests {
 
 	@Test
 	void contextLoads() {
+		
 	}
 
 }
