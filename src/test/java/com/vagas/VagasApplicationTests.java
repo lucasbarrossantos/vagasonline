@@ -3,11 +3,12 @@ package com.vagas;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
+
 @SpringBootTest
-class VagasApplicationTests {
+class VagasApplicationTests {	
 
 	@Test
-	void contextLoads() {
+	void buscar_id_200() throws Exception {
 		
 	}
 

@@ -43,6 +43,7 @@ public class BeneficioController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public DeferredResult<HttpEntity<BeneficioModel>> salvar(@RequestBody @Valid BeneficioInput beneficioInput) {
         DeferredResult<HttpEntity<BeneficioModel>> deferredResult = new DeferredResult<>();
         this.beneficioService.salvar(modelMapper.toDomainObject(beneficioInput))

@@ -1,5 +1,6 @@
 package com.vagas.domain.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -8,9 +9,14 @@ import javax.persistence.*;
 @Entity
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@AllArgsConstructor
 public class Beneficio {
 
-    @EqualsAndHashCode.Include
+    public Beneficio() {
+		
+	}
+
+	@EqualsAndHashCode.Include
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
