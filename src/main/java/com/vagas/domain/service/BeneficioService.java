@@ -1,27 +1,20 @@
 package com.vagas.domain.service;
 
-import com.vagas.api.model.BeneficioModel;
-import com.vagas.api.model.input.BeneficioInput;
-import com.vagas.api.modelmapper.BeneficioModelMapper;
 import com.vagas.domain.exception.BeneficioNaoEncontradoException;
 import com.vagas.domain.exception.EntidadeEmUsoException;
 import com.vagas.domain.model.Beneficio;
 import com.vagas.domain.repository.BeneficioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -30,23 +23,17 @@ public class BeneficioService {
 	private static final String MSG_BENEFICIO_EM_USO = "Benefício de código %d não pode ser removido, pois está em uso";
 
 	private final BeneficioRepository beneficioRepository;
-	private final BeneficioModelMapper modelMapper;
 
 	@Transactional
-	public Mono<BeneficioModel> salvar(final Beneficio beneficio) {
+	public Mono<Beneficio> salvar(final Beneficio beneficio) {
 		return Mono.fromSupplier(() -> beneficioRepository.save(beneficio))
 				.publishOn(Schedulers.parallel())
-				.map(modelMapper::toModel)
 				.doOnError(error -> log.error("Erro em BeneficioService.salvar() ao tentar salvar o benefício", error));
 	}
 
-	public Mono<Page<BeneficioModel>> listarTodos(Pageable pageable) {
+	public Mono<Page<Beneficio>> listarTodos(Pageable pageable) {
 		return Mono.fromSupplier(() -> beneficioRepository.findAll(pageable))
-				.subscribeOn(Schedulers.elastic())
-				.map(beneficioPage -> {
-					List<BeneficioModel> empresaResumo = modelMapper.toCollectionModel(beneficioPage.getContent());
-					return new PageImpl<>(empresaResumo, pageable, beneficioPage.getTotalElements());
-				});
+				.subscribeOn(Schedulers.elastic());
 	}
 
 	public Mono<Beneficio> buscarOuFalhar(Long id) {
@@ -58,8 +45,7 @@ public class BeneficioService {
 	}
 
 	@Transactional
-	public Mono<BeneficioModel> update(BeneficioInput beneficioInput, Beneficio beneficio) {
-		modelMapper.copyToDomainObject(beneficioInput, beneficio);
+	public Mono<Beneficio> update(Beneficio beneficio) {
 		return salvar(beneficio);
 	}
 

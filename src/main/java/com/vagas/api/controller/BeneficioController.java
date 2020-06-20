@@ -4,6 +4,7 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -26,7 +27,6 @@ import com.vagas.domain.service.BeneficioService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
@@ -38,8 +38,16 @@ public class BeneficioController {
     private final BeneficioModelMapper modelMapper;
 
     @GetMapping
-    public Mono<Page<BeneficioModel>> findAll(Pageable pageable) {
-        return beneficioService.listarTodos(pageable);
+    public DeferredResult<HttpEntity<Page<BeneficioModel>>> findAll(Pageable pageable) {
+        DeferredResult<HttpEntity<Page<BeneficioModel>>> deferredResult = new DeferredResult<>();
+        beneficioService.listarTodos(pageable)
+                .subscribe(response -> deferredResult
+                                .setResult(new ResponseEntity<>(
+                                        new PageImpl<>(modelMapper.toCollectionModel(response.getContent()),
+                                                pageable, response.getTotalElements())
+                                        , HttpStatus.OK)),
+                        deferredResult::setErrorResult);
+        return deferredResult;
     }
 
     @PostMapping
@@ -48,7 +56,7 @@ public class BeneficioController {
         DeferredResult<HttpEntity<BeneficioModel>> deferredResult = new DeferredResult<>();
         this.beneficioService.salvar(modelMapper.toDomainObject(beneficioInput))
                 .doOnError(error -> log.error("Erro em BeneficioController.salvar() ao tentar salvar o benefício"))
-                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
+                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(modelMapper.toModel(response), HttpStatus.OK)),
                         deferredResult::setErrorResult);
         return deferredResult;
     }
@@ -65,13 +73,18 @@ public class BeneficioController {
 
     @PutMapping("/{id}")
     public DeferredResult<HttpEntity<BeneficioModel>> atualizar(@PathVariable("id") Long id,
-                                       @RequestBody @Valid BeneficioInput beneficioInput) {
+                                                                @RequestBody @Valid BeneficioInput beneficioInput) {
         DeferredResult<HttpEntity<BeneficioModel>> deferredResult = new DeferredResult<>();
         beneficioService.buscarOuFalhar(id)
-                .subscribe(response -> beneficioService.update(beneficioInput, response)
-                                .subscribe(beneficioSalvo ->
-                                                deferredResult.setResult(new ResponseEntity<>(beneficioSalvo, HttpStatus.OK)),
-                                        deferredResult::setErrorResult)
+                .subscribe(response -> {
+                            modelMapper.copyToDomainObject(beneficioInput, response);
+                            beneficioService.update(response)
+                                    .subscribe(beneficioSalvo ->
+                                                    deferredResult.setResult(
+                                                            new ResponseEntity<>(modelMapper.toModel(beneficioSalvo),
+                                                                    HttpStatus.OK)),
+                                            deferredResult::setErrorResult);
+                        }
                         , deferredResult::setErrorResult);
         return deferredResult;
     }

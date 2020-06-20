@@ -12,7 +12,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.google.gson.Gson;
-import com.vagas.api.model.BeneficioModel;
 import com.vagas.api.model.input.BeneficioInput;
 import com.vagas.domain.model.Beneficio;
 import com.vagas.domain.service.BeneficioService;
@@ -38,7 +37,7 @@ class BeneficioTest extends APIBaseTest {
 
 	@Test
 	public void test_Criar_Novo_Beneficio() throws Exception {
-		BeneficioModel beneficioEsperado = new BeneficioModel();
+		Beneficio beneficioEsperado = new Beneficio();
 		beneficioEsperado.setId(1L);
 		beneficioEsperado.setTitulo("VR");
 		beneficioEsperado.setDescricao("Vale Refeição");
