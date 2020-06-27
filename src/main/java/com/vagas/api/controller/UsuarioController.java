@@ -4,6 +4,7 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -26,7 +27,6 @@ import com.vagas.domain.service.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
@@ -38,8 +38,16 @@ public class UsuarioController {
     private final UsuarioModelMapper modelMapper;
 
     @GetMapping
-    public Mono<Page<UsuarioModel>> findAll(Pageable pageable) {
-        return usuarioService.listarTodos(pageable);
+    public DeferredResult<HttpEntity<Page<UsuarioModel>>> findAll(Pageable pageable) {
+        DeferredResult<HttpEntity<Page<UsuarioModel>>> deferredResult = new DeferredResult<>();
+        usuarioService.listarTodos(pageable)
+                .subscribe(response -> deferredResult
+                                .setResult(new ResponseEntity<>(
+                                        new PageImpl<>(modelMapper.toCollectionModel(response.getContent()),
+                                                pageable, response.getTotalElements())
+                                        , HttpStatus.OK)),
+                        deferredResult::setErrorResult);
+        return deferredResult;
     }
 
     @PostMapping
@@ -48,7 +56,7 @@ public class UsuarioController {
         this.usuarioService.salvar(modelMapper.toDomainObject(usuarioInput))
                 .doOnError(error -> log.error("Erro em UsuarioController.salvar() ao tentar salvar o usuário"))
                 .subscribe(response ->
-                                deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
+                                deferredResult.setResult(new ResponseEntity<>(modelMapper.toModel(response), HttpStatus.OK)),
                         deferredResult::setErrorResult);
         return deferredResult;
     }
@@ -67,10 +75,16 @@ public class UsuarioController {
                                        @RequestBody @Valid UsuarioInput usuarioInput) {
         DeferredResult<HttpEntity<UsuarioModel>> deferredResult = new DeferredResult<>();
         usuarioService.buscarOuFalhar(id)
-                .subscribe(response -> usuarioService.update(usuarioInput, response)
-                                .subscribe(usuarioSalvo ->
-                                                deferredResult.setResult(new ResponseEntity<>(usuarioSalvo, HttpStatus.OK)),
-                                        deferredResult::setErrorResult)
+                .subscribe(response ->
+                        {
+                            modelMapper.copyToDomainObject(usuarioInput, response);
+                            usuarioService.update(usuarioInput, response)
+                                    .subscribe(usuarioSalvo ->
+                                                    deferredResult.setResult(
+                                                            new ResponseEntity<>(modelMapper.toModel(usuarioSalvo),
+                                                            HttpStatus.OK)),
+                                            deferredResult::setErrorResult);
+                        }
                         , deferredResult::setErrorResult);
         return deferredResult;
     }

@@ -1,7 +1,12 @@
 package com.vagas.domain.service;
 
-import java.util.List;
-
+import com.vagas.domain.exception.EntidadeEmUsoException;
+import com.vagas.domain.exception.OportunidadeNaoEncontradaException;
+import com.vagas.domain.model.Empresa;
+import com.vagas.domain.model.Oportunidade;
+import com.vagas.domain.repository.OportunidadeRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -10,18 +15,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.vagas.api.model.OportunidadeModel;
-import com.vagas.api.model.input.OportunidadeInput;
-import com.vagas.api.modelmapper.OportunidadeModelMapper;
-import com.vagas.domain.exception.EntidadeEmUsoException;
-import com.vagas.domain.exception.OportunidadeNaoEncontradaException;
-import com.vagas.domain.model.Empresa;
-import com.vagas.domain.model.Oportunidade;
-import com.vagas.domain.repository.OportunidadeRepository;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple2;
@@ -34,26 +27,22 @@ public class OportunidadeService {
 
 	private final OportunidadeRepository oportunidadeRepository;
 	private final EmpresaService empresaService;
-	private final OportunidadeModelMapper modelMapper;
 
 	@Transactional
-	public Mono<Tuple2<Tuple2<Empresa, Empresa>, OportunidadeModel>> salvar(final Oportunidade oportunidade,
+	public Mono<Tuple2<Tuple2<Empresa, Empresa>, Oportunidade>> salvar(final Oportunidade oportunidade,
 			Long empresaId) {
 		return empresaService.buscarOuFalhar(empresaId).subscribeOn(Schedulers.elastic())
 				.zipWhen(empresa -> empresaService.buscarOuFalhar(oportunidade.getEmpresa().getId())
 						.subscribeOn(Schedulers.elastic()))
-				.zipWhen(empresa -> Mono.just(oportunidadeRepository.saveAndFlush(oportunidade))
-						.map(modelMapper::toModel));
+				.zipWhen(empresa -> Mono.just(oportunidadeRepository.saveAndFlush(oportunidade)));
 	}
 
-	public Mono<Tuple2<Empresa, Page<OportunidadeModel>>> listarTodos(Long empresaId, Pageable pageable) {
+	public Mono<Tuple2<Empresa, Page<Oportunidade>>> listarTodos(Long empresaId, Pageable pageable) {
 		return empresaService.buscarOuFalhar(empresaId).subscribeOn(Schedulers.elastic())
 				.zipWhen(empresa -> Mono.just(oportunidadeRepository.findAllByEmpresaId(empresaId, pageable))
-						.subscribeOn(Schedulers.elastic()).map(empresaPage -> {
-							List<OportunidadeModel> empresaResumo = modelMapper
-									.toCollectionModel(empresaPage.getContent());
-							return new PageImpl<>(empresaResumo, pageable, empresaPage.getTotalElements());
-						}));
+						.subscribeOn(Schedulers.elastic()).map(oportunidadePage ->
+								new PageImpl<>(oportunidadePage.getContent(), pageable,
+										oportunidadePage.getTotalElements())));
 	}
 
 	public Mono<Oportunidade> buscarOuFalhar(Long id) {
@@ -66,9 +55,7 @@ public class OportunidadeService {
 	}
 
 	@Transactional
-	public Mono<Tuple2<Tuple2<Empresa, Empresa>, OportunidadeModel>> update(OportunidadeInput oportunidadeInput,
-			Oportunidade oportunidade, Long empresaId) {
-		modelMapper.copyToDomainObject(oportunidadeInput, oportunidade);
+	public Mono<Tuple2<Tuple2<Empresa, Empresa>, Oportunidade>> update(Oportunidade oportunidade, Long empresaId) {
 		return salvar(oportunidade, empresaId);
 	}
 

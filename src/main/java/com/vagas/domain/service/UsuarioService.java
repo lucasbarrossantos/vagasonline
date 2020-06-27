@@ -1,8 +1,6 @@
 package com.vagas.domain.service;
 
-import com.vagas.api.model.UsuarioModel;
 import com.vagas.api.model.input.UsuarioInput;
-import com.vagas.api.modelmapper.UsuarioModelMapper;
 import com.vagas.domain.exception.EntidadeEmUsoException;
 import com.vagas.domain.exception.NegocioException;
 import com.vagas.domain.exception.UsuarioNaoEncontradoException;
@@ -10,19 +8,16 @@ import com.vagas.domain.model.Usuario;
 import com.vagas.domain.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -34,10 +29,9 @@ public class UsuarioService {
             = "Usuário de código %d não pode ser removido, pois está em uso";
 
     private final UsuarioRepository usuarioRepository;
-    private final UsuarioModelMapper modelMapper;
 
     @Transactional
-    public Mono<UsuarioModel> salvar(final Usuario usuario) {
+    public Mono<Usuario> salvar(final Usuario usuario) {
         return Mono
                 .fromCallable(() -> {
                     if (usuario.getIsAtivo() == null)
@@ -56,19 +50,15 @@ public class UsuarioService {
                         throw new NegocioException("As senhas informadas não coincidem!");
                     }
 
-                    return modelMapper.toModel(usuarioRepository.save(usuario));
+                    return usuarioRepository.save(usuario);
                 })
                 .publishOn(Schedulers.parallel())
                 .doOnError(error -> log.error("Erro em UsuarioService.salvar() ao tentar salvar o usuário", error));
     }
 
-    public Mono<Page<UsuarioModel>> listarTodos(Pageable pageable) {
+    public Mono<Page<Usuario>> listarTodos(Pageable pageable) {
         return Mono.fromSupplier(() -> usuarioRepository.findAll(pageable))
-        		.publishOn(Schedulers.elastic())
-                .map(usuarioPage -> {
-                    List<UsuarioModel> empresaResumo = modelMapper.toCollectionModel(usuarioPage.getContent());
-                    return new PageImpl<>(empresaResumo, pageable, usuarioPage.getTotalElements());
-                });
+                .subscribeOn(Schedulers.elastic());
     }
 
     public Mono<Usuario> buscarOuFalhar(Long id) {
@@ -82,8 +72,7 @@ public class UsuarioService {
     }
 
     @Transactional
-    public Mono<UsuarioModel> update(UsuarioInput usuarioInput, Usuario usuario) {
-        modelMapper.copyToDomainObject(usuarioInput, usuario);
+    public Mono<Usuario> update(UsuarioInput usuarioInput, Usuario usuario) {
         return salvar(usuario);
     }
 

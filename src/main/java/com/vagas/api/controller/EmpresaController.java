@@ -4,6 +4,7 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -27,7 +28,6 @@ import com.vagas.domain.service.EmpresaService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
@@ -39,8 +39,15 @@ public class EmpresaController {
     private final EmpresaModelMapper modelMapper;
 
     @GetMapping
-    public Mono<Page<EmpresaResumoModel>> findAll(Pageable pageable) {
-        return empresaService.listarTodos(pageable);
+    public DeferredResult<HttpEntity<Page<EmpresaResumoModel>>> findAll(Pageable pageable) {
+        DeferredResult<HttpEntity<Page<EmpresaResumoModel>>> deferredResult = new DeferredResult<>();
+        empresaService.listarTodos(pageable).subscribe(response -> deferredResult
+                        .setResult(new ResponseEntity<>(
+                                new PageImpl<>(modelMapper.toCollectionResumeModel(response.getContent()),
+                                        pageable, response.getTotalElements())
+                                , HttpStatus.OK)),
+                deferredResult::setErrorResult);
+        return deferredResult;
     }
 
     @PostMapping
@@ -48,7 +55,7 @@ public class EmpresaController {
         DeferredResult<HttpEntity<EmpresaModel>> deferredResult = new DeferredResult<>();
         this.empresaService.salvar(modelMapper.toDomainObject(empresaInput))
                 .doOnError(error -> log.error("Erro em EmpresaController.salvar() ao tentar salvar a empresa"))
-                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
+                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(modelMapper.toModel(response), HttpStatus.OK)),
                         deferredResult::setErrorResult);
         return deferredResult;
     }
@@ -57,20 +64,27 @@ public class EmpresaController {
     public DeferredResult<HttpEntity<EmpresaModel>> findById(@PathVariable("id") Long id) {
         DeferredResult<HttpEntity<EmpresaModel>> deferredResult = new DeferredResult<>();
         empresaService.buscarOuFalhar(id)
-                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(modelMapper.toModel(response), HttpStatus.OK)),
+                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(modelMapper.toModel(response),
+                                HttpStatus.OK)),
                         deferredResult::setErrorResult);
         return deferredResult;
     }
 
     @PutMapping("/{id}")
-    public DeferredResult<HttpEntity<EmpresaModel>> atualizar(@PathVariable("id") Long id, 
-                                       @RequestBody @Valid EmpresaInput empresaInput) {
+    public DeferredResult<HttpEntity<EmpresaModel>> atualizar(@PathVariable("id") Long id,
+                                                              @RequestBody @Valid EmpresaInput empresaInput) {
         DeferredResult<HttpEntity<EmpresaModel>> deferredResult = new DeferredResult<>();
         empresaService.buscarOuFalhar(id)
-                .subscribe(response -> empresaService.update(empresaInput, response)
-                                .subscribe(empresaSalvo ->
-                                                deferredResult.setResult(new ResponseEntity<>(empresaSalvo, HttpStatus.OK)),
-                                        deferredResult::setErrorResult)
+                .subscribe(response ->
+                        {
+                            modelMapper.copyToDomainObject(empresaInput, response);
+                            empresaService.update(empresaInput, response)
+                                    .subscribe(empresaSalvo ->
+                                                    deferredResult.setResult(
+                                                            new ResponseEntity<>(modelMapper.toModel(empresaSalvo),
+                                                                    HttpStatus.OK)),
+                                            deferredResult::setErrorResult);
+                        }
                         , deferredResult::setErrorResult);
         return deferredResult;
     }

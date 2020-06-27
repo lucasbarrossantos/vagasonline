@@ -4,6 +4,7 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -27,33 +28,43 @@ import com.vagas.domain.service.OportunidadeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/empresa/{empresaId}/oportunidade")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class EmpresaOportunidadeController {
-	
-	private final OportunidadeService oportunidadeService;
+
+    private final OportunidadeService oportunidadeService;
     private final OportunidadeModelMapper modelMapper;
 
     @GetMapping
     public DeferredResult<HttpEntity<Page<OportunidadeModel>>> findAll(@PathVariable Long empresaId, Pageable pageable) {
-    	DeferredResult<HttpEntity<Page<OportunidadeModel>>> deferredResult = new DeferredResult<>();
-    	
-    	oportunidadeService.listarTodos(empresaId, pageable)
-    			.subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response.getT2(), HttpStatus.OK)),
+        DeferredResult<HttpEntity<Page<OportunidadeModel>>> deferredResult = new DeferredResult<>();
+
+        oportunidadeService.listarTodos(empresaId, pageable)
+                .subscribe(response -> {
+                            List<OportunidadeModel> empresaResumo =
+                                    modelMapper.toCollectionModel(response.getT2().getContent());
+
+                            deferredResult.setResult(new ResponseEntity<>(
+                                    new PageImpl<>(empresaResumo, pageable,
+                                            response.getT2().getTotalElements()), HttpStatus.OK));
+                        },
                         deferredResult::setErrorResult);
-    	
-    	return deferredResult;
+
+        return deferredResult;
     }
 
     @PostMapping
-    public DeferredResult<HttpEntity<OportunidadeModel>> salvar(@RequestBody @Valid OportunidadeInput oportunidadeInput, 
-    		@PathVariable Long empresaId) {
+    public DeferredResult<HttpEntity<OportunidadeModel>> salvar(@RequestBody @Valid OportunidadeInput oportunidadeInput,
+                                                                @PathVariable Long empresaId) {
         DeferredResult<HttpEntity<OportunidadeModel>> deferredResult = new DeferredResult<>();
         this.oportunidadeService.salvar(modelMapper.toDomainObject(oportunidadeInput), empresaId)
                 .doOnError(error -> log.error("Erro em OportunidadeController.salvar() ao tentar salvar o benefício"))
-                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(response.getT2(), HttpStatus.OK)),
+                .subscribe(response -> deferredResult.setResult(
+                        new ResponseEntity<>(modelMapper.toModel(response.getT2()), HttpStatus.OK)),
                         deferredResult::setErrorResult);
         return deferredResult;
     }
@@ -70,13 +81,20 @@ public class EmpresaOportunidadeController {
 
     @PutMapping("/{id}")
     public DeferredResult<HttpEntity<OportunidadeModel>> atualizar(@PathVariable("id") Long id, @PathVariable Long empresaId,
-                                       @RequestBody @Valid OportunidadeInput oportunidadeInput) {
+                                                                   @RequestBody @Valid OportunidadeInput oportunidadeInput) {
         DeferredResult<HttpEntity<OportunidadeModel>> deferredResult = new DeferredResult<>();
         oportunidadeService.buscarOuFalhar(id)
-                .subscribe(response -> oportunidadeService.update(oportunidadeInput, response, empresaId)
-                                .subscribe(oportunidadeSalvo ->
-                                                deferredResult.setResult(new ResponseEntity<>(oportunidadeSalvo.getT2(), HttpStatus.OK)),
-                                        deferredResult::setErrorResult)
+                .subscribe(response ->
+                        {
+                            modelMapper.copyToDomainObject(oportunidadeInput, response);
+                            oportunidadeService.update(response, empresaId)
+                                    .subscribe(oportunidadeSalvo ->
+                                                    deferredResult.setResult(
+                                                            new ResponseEntity<>(
+                                                                    modelMapper.toModel(oportunidadeSalvo.getT2()),
+                                                                    HttpStatus.OK)),
+                                            deferredResult::setErrorResult);
+                        }
                         , deferredResult::setErrorResult);
         return deferredResult;
     }
@@ -86,7 +104,8 @@ public class EmpresaOportunidadeController {
     public DeferredResult<HttpEntity<String>> remover(@PathVariable Long id, @PathVariable Long empresaId) {
         DeferredResult<HttpEntity<String>> deferredResult = new DeferredResult<>();
         oportunidadeService.excluir(empresaId, id)
-                .subscribe(data -> deferredResult.setResult(new ResponseEntity<>("", HttpStatus.OK)), deferredResult::setErrorResult);
+                .subscribe(data -> deferredResult.setResult(new ResponseEntity<>("", HttpStatus.OK)),
+                        deferredResult::setErrorResult);
         return deferredResult;
     }
 

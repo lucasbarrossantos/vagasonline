@@ -1,28 +1,19 @@
 package com.vagas.domain.service;
 
-import java.util.List;
-
+import com.vagas.api.model.input.EmpresaInput;
+import com.vagas.domain.exception.EmpresaNaoEncontradaException;
+import com.vagas.domain.exception.EntidadeEmUsoException;
+import com.vagas.domain.model.Empresa;
+import com.vagas.domain.repository.EmpresaRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.vagas.api.model.EmpresaModel;
-import com.vagas.api.model.EmpresaResumoModel;
-import com.vagas.api.model.input.EmpresaInput;
-import com.vagas.api.modelmapper.EmpresaModelMapper;
-import com.vagas.domain.exception.EmpresaNaoEncontradaException;
-import com.vagas.domain.exception.EntidadeEmUsoException;
-import com.vagas.domain.exception.NegocioException;
-import com.vagas.domain.model.Empresa;
-import com.vagas.domain.repository.EmpresaRepository;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple2;
@@ -35,24 +26,17 @@ public class EmpresaService {
 	private static final String MSG_EMPRESA_EM_USO = "Empresa de código %d não pode ser removida, pois está em uso";
 
 	private final EmpresaRepository empresaRepository;
-	private final EmpresaModelMapper modelMapper;
 
 	@Transactional
-	public Mono<EmpresaModel> salvar(final Empresa empresa) {
+	public Mono<Empresa> salvar(final Empresa empresa) {
 		return Mono.fromSupplier(() -> empresaRepository.save(empresa))
-				.publishOn(Schedulers.elastic()).map(modelMapper::toModel).doOnError(error -> {
-			log.error("Erro em EmpresaService.salvar() ao tentar salvar o empresa", error);
-			throw new NegocioException("Erro de sistema! Favor entrar em contato com o administrador se o problema persistir", error);
-		});
+				.publishOn(Schedulers.parallel())
+				.doOnError(error -> log.error("Erro em BeneficioService.salvar() ao tentar salvar o benefício", error));
 	}
 
-	public Mono<Page<EmpresaResumoModel>> listarTodos(Pageable pageable) {
-		return Mono.fromSupplier(() -> empresaRepository.findAll(pageable)).subscribeOn(Schedulers.elastic())
-				.map(empresaPage -> {
-					List<EmpresaResumoModel> empresaResumo = modelMapper
-							.toCollectionResumeModel(empresaPage.getContent());
-					return new PageImpl<>(empresaResumo, pageable, empresaPage.getTotalElements());
-				});
+	public Mono<Page<Empresa>> listarTodos(Pageable pageable) {
+		return Mono.fromSupplier(() -> empresaRepository.findAll(pageable))
+				.subscribeOn(Schedulers.elastic());
 	}
 
 	public Mono<Empresa> buscarOuFalhar(Long id) {
@@ -64,8 +48,7 @@ public class EmpresaService {
 	}
 
 	@Transactional
-	public Mono<EmpresaModel> update(EmpresaInput empresaInput, Empresa empresa) {
-		modelMapper.copyToDomainObject(empresaInput, empresa);
+	public Mono<Empresa> update(EmpresaInput empresaInput, Empresa empresa) {
 		return salvar(empresa);
 	}
 
