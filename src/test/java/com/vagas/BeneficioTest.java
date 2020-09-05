@@ -4,18 +4,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.google.gson.Gson;
+import com.vagas.api.model.input.BeneficioInput;
+import com.vagas.domain.model.Beneficio;
+import com.vagas.domain.service.BeneficioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-
-import com.google.gson.Gson;
-import com.vagas.api.model.input.BeneficioInput;
-import com.vagas.domain.model.Beneficio;
-import com.vagas.domain.service.BeneficioService;
-
 import reactor.core.publisher.Mono;
 
 class BeneficioTest extends APIBaseTest {
@@ -28,12 +26,6 @@ class BeneficioTest extends APIBaseTest {
 
 	@Autowired
 	private Gson gson;
-
-	@Test
-	public void test_Listar_Beneficios() throws Exception {
-		this.mockMvc.perform(MockMvcRequestBuilders.get("/beneficio").contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk()).andReturn();
-	}
 
 	@Test
 	public void test_Criar_Novo_Beneficio() throws Exception {
