@@ -52,7 +52,7 @@ public class BeneficioController {
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<BeneficioModel> salvar(@RequestBody @Valid BeneficioInput beneficioInput) {
         Beneficio beneficioSalvo = this.beneficioService.salvar(modelMapper.toDomainObject(beneficioInput));
-        return new ResponseEntity<>(modelMapper.toModel(beneficioSalvo), HttpStatus.OK);
+        return new ResponseEntity<>(modelMapper.toModel(beneficioSalvo), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
