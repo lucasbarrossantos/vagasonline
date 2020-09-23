@@ -2,10 +2,12 @@ package com.vagas.domain.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 
 import javax.persistence.*;
 
+@Builder
 @Entity
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)

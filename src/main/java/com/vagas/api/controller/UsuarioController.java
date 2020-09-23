@@ -2,10 +2,11 @@ package com.vagas.api.controller;
 
 import javax.validation.Valid;
 
+import com.vagas.domain.model.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.async.DeferredResult;
 
 import com.vagas.api.model.UsuarioModel;
 import com.vagas.api.model.input.UsuarioInput;
@@ -26,7 +26,6 @@ import com.vagas.domain.service.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
@@ -38,50 +37,40 @@ public class UsuarioController {
     private final UsuarioModelMapper modelMapper;
 
     @GetMapping
-    public Mono<Page<UsuarioModel>> findAll(Pageable pageable) {
-        return usuarioService.listarTodos(pageable);
+    public ResponseEntity<Page<UsuarioModel>> findAll(Pageable pageable) {
+        Page<Usuario> usuarioPage = usuarioService.listarTodos(pageable);
+        return new ResponseEntity<>(
+                new PageImpl<>(modelMapper.toCollectionModel(usuarioPage.getContent()),
+                        pageable, usuarioPage.getTotalElements())
+                , HttpStatus.OK);
     }
 
     @PostMapping
-    public DeferredResult<HttpEntity<UsuarioModel>> salvar(@RequestBody @Valid UsuarioInput usuarioInput) {
-        DeferredResult<HttpEntity<UsuarioModel>> deferredResult = new DeferredResult<>();
-        this.usuarioService.salvar(modelMapper.toDomainObject(usuarioInput))
-                .doOnError(error -> log.error("Erro em UsuarioController.salvar() ao tentar salvar o usuário"))
-                .subscribe(response ->
-                                deferredResult.setResult(new ResponseEntity<>(response, HttpStatus.OK)),
-                        deferredResult::setErrorResult);
-        return deferredResult;
+    public ResponseEntity<UsuarioModel> salvar(@RequestBody @Valid UsuarioInput usuarioInput) {
+        Usuario salvarSalvo = usuarioService.salvar(modelMapper.toDomainObject(usuarioInput));
+        return new ResponseEntity<>(modelMapper.toModel(salvarSalvo), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public DeferredResult<HttpEntity<UsuarioModel>> findById(@PathVariable("id") Long id) {
-        DeferredResult<HttpEntity<UsuarioModel>> deferredResult = new DeferredResult<>();
-        usuarioService.buscarOuFalhar(id)
-                .subscribe(response -> deferredResult.setResult(new ResponseEntity<>(modelMapper.toModel(response), HttpStatus.OK)),
-                        deferredResult::setErrorResult);
-        return deferredResult;
+    public ResponseEntity<UsuarioModel> findById(@PathVariable("id") Long id) {
+        Usuario usuario = usuarioService.buscarOuFalhar(id);
+        return new ResponseEntity<>(modelMapper.toModel(usuario), HttpStatus.OK);
     }
 
     @PutMapping("/{id}")
-    public DeferredResult<HttpEntity<UsuarioModel>> atualizar(@PathVariable("id") Long id,
-                                       @RequestBody @Valid UsuarioInput usuarioInput) {
-        DeferredResult<HttpEntity<UsuarioModel>> deferredResult = new DeferredResult<>();
-        usuarioService.buscarOuFalhar(id)
-                .subscribe(response -> usuarioService.update(usuarioInput, response)
-                                .subscribe(usuarioSalvo ->
-                                                deferredResult.setResult(new ResponseEntity<>(usuarioSalvo, HttpStatus.OK)),
-                                        deferredResult::setErrorResult)
-                        , deferredResult::setErrorResult);
-        return deferredResult;
+    public ResponseEntity<UsuarioModel> atualizar(@PathVariable("id") Long id,
+                                                  @RequestBody @Valid UsuarioInput usuarioInput) {
+        Usuario usuario = usuarioService.buscarOuFalhar(id);
+        modelMapper.copyToDomainObject(usuarioInput, usuario);
+        Usuario usuarioAtualizado = usuarioService.update(usuarioInput, usuario);
+        return new ResponseEntity<>(modelMapper.toModel(usuarioAtualizado), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public DeferredResult<HttpEntity<String>> remover(@PathVariable Long id) {
-        DeferredResult<HttpEntity<String>> deferredResult = new DeferredResult<>();
-        usuarioService.excluir(id)
-        .subscribe(data -> deferredResult.setResult(new ResponseEntity<>("", HttpStatus.OK)), deferredResult::setErrorResult);
-        return deferredResult;
+    public ResponseEntity<Void> remover(@PathVariable Long id) {
+        usuarioService.excluir(id);
+        return ResponseEntity.noContent().build();
     }
 
 }
