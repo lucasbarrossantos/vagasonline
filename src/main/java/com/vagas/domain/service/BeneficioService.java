@@ -13,8 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -25,33 +25,26 @@ public class BeneficioService {
 	private final BeneficioRepository beneficioRepository;
 
 	@Transactional
-	public Mono<Beneficio> salvar(final Beneficio beneficio) {
-		return Mono.fromSupplier(() -> beneficioRepository.save(beneficio))
-				.publishOn(Schedulers.parallel())
-				.doOnError(error -> log.error("Erro em BeneficioService.salvar() ao tentar salvar o benefício", error));
+	public Beneficio salvar(final Beneficio beneficio) {
+		return beneficioRepository.save(beneficio);
 	}
 
-	public Mono<Page<Beneficio>> listarTodos(Pageable pageable) {
-		return Mono.fromSupplier(() -> beneficioRepository.findAll(pageable))
-				.subscribeOn(Schedulers.elastic());
+	public Page<Beneficio> listarTodos(Pageable pageable) {
+		return beneficioRepository.findAll(pageable);
 	}
 
-	public Mono<Beneficio> buscarOuFalhar(Long id) {
-		return Mono.fromCallable(() -> beneficioRepository.findById(id).orElseThrow(() -> {
-			log.error(String.format(
-					"Erro em BeneficioController.buscarOuFalhar(?) ao tentar buscar o benefício de código %d", id));
-			return new BeneficioNaoEncontradoException(id);
-		})).subscribeOn(Schedulers.elastic());
+	public Optional<Beneficio> buscarOuFalhar(Long id) {
+		return beneficioRepository.findById(id);
 	}
 
 	@Transactional
-	public Mono<Beneficio> update(Beneficio beneficio) {
+	public Beneficio update(Beneficio beneficio) {
 		return salvar(beneficio);
 	}
 
 	@Transactional
-	public Mono<Boolean> excluir(Long id) {
-		return Mono.fromCallable(() -> {
+	public void excluir(Long id) {
+
 			try {
 				beneficioRepository.deleteById(id);
 				beneficioRepository.flush();
@@ -66,8 +59,5 @@ public class BeneficioService {
 						"Erro ao tentar excluir o benefício! BeneficioService.excluir(?), violação de chave primária, id não encontrado no Banco de Dados");
 				throw new EntidadeEmUsoException(String.format(MSG_BENEFICIO_EM_USO, id));
 			}
-			
-			return Boolean.TRUE;
-		}).subscribeOn(Schedulers.elastic());
 	}
 }
