@@ -14,9 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -51,12 +55,36 @@ class BeneficioControllerTest {
 
         Mockito.when(beneficioService.salvar(Mockito.any(Beneficio.class))).thenReturn(beneficioSalvoMock);
         HttpEntity<BeneficioInput> request = new HttpEntity<>(beneficioInputMock);
-        ResponseEntity<String> beneficio = restTemplate.postForEntity("/beneficio", request, String.class);
-        Beneficio beneficioResponse = gson.fromJson(beneficio.getBody(), Beneficio.class);
+        ResponseEntity<String> response = restTemplate.postForEntity("/beneficio", request, String.class);
+        Beneficio beneficioResponse = gson.fromJson(response.getBody(), Beneficio.class);
 
-        assertThat(beneficio.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         verify(beneficioService, Mockito.times(1)).salvar(Mockito.any(Beneficio.class));
         assertEquals((long) beneficioResponse.getId(), 1L);
+    }
+
+    @Test
+    @DisplayName("Deve listar os beneficios e retornar 200!")
+    void deveListarOsBeneficiosERetornar200() {
+        Page<Beneficio> pageMock = new PageImpl<>(Collections.singletonList(mockFactory.getBeneficio()));
+        Mockito.when(beneficioService.listarTodos(Mockito.any(Pageable.class))).thenReturn(pageMock);
+        ResponseEntity<String> response = restTemplate.getForEntity("/beneficio", String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    @DisplayName("Deve recuperar um beneficio por id e retornar 200!")
+    void deveBuscarUmBeneficioPorIdERetornar200() {
+        Beneficio beneficioMock = mockFactory.getBeneficio();
+        beneficioMock.setId(1L);
+
+        Mockito.when(beneficioService.buscarOuFalhar(1L)).thenReturn(Optional.of(beneficioMock));
+        ResponseEntity<String> response = restTemplate.getForEntity("/beneficio/1", String.class);
+        BeneficioModel beneficioModel = gson.fromJson(response.getBody(), BeneficioModel.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals((long) beneficioModel.getId(), 1L);
+        verify(beneficioService, Mockito.times(1)).buscarOuFalhar(1L);
     }
 
     @Test
@@ -96,11 +124,11 @@ class BeneficioControllerTest {
         Mockito.when(beneficioService.buscarOuFalhar(1L)).thenReturn(Optional.of(beneficioSalvoMock));
 
 
-        ResponseEntity<BeneficioModel> beneficio = restTemplate
+        ResponseEntity<BeneficioModel> response = restTemplate
                 .exchange("/beneficio/1", HttpMethod.PUT, request, BeneficioModel.class);
 
-        assertThat(beneficio.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(Objects.requireNonNull(beneficio.getBody()).getId()).isEqualTo(1L);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(Objects.requireNonNull(response.getBody()).getId()).isEqualTo(1L);
         verify(beneficioService, Mockito.times(1)).update(beneficioMock);
     }
 
@@ -116,8 +144,8 @@ class BeneficioControllerTest {
 
         Mockito.when(beneficioService.salvar(beneficioMock)).thenReturn(beneficioSalvoMock);
         HttpEntity<BeneficioInput> request = new HttpEntity<>(beneficioInputMock);
-        ResponseEntity<BeneficioModel> beneficio = restTemplate.postForEntity("/beneficio", request, BeneficioModel.class);
+        ResponseEntity<BeneficioModel> response = restTemplate.postForEntity("/beneficio", request, BeneficioModel.class);
 
-        assertThat(beneficio.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 }
