@@ -9,10 +9,7 @@ import org.springframework.stereotype.Component;
 public class MockFactory {
 
     public Beneficio getBeneficio() {
-        return Beneficio.builder()
-                .descricao("Teste de descricao")
-                .titulo("Teste titulo")
-                .build();
+        return new Beneficio(1L , "Titulo beneficio", "Descricao beneficio");
     }
 
     public BeneficioInput getBeneficioInput() {
