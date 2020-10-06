@@ -49,13 +49,16 @@ public class EmpresaController {
     @PostMapping
     public ResponseEntity<EmpresaModel> salvar(@RequestBody @Valid EmpresaInput empresaInput) {
         Empresa empresaSalva = empresaService.salvar(modelMapper.toDomainObject(empresaInput));
-        return new ResponseEntity<>(modelMapper.toModel(empresaSalva), HttpStatus.OK);
+        return new ResponseEntity<>(modelMapper.toModel(empresaSalva), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<EmpresaModel> findById(@PathVariable("id") Long id) {
         Empresa empresa = empresaService.buscarOuFalhar(id);
-        return new ResponseEntity<>(modelMapper.toModel(empresa), HttpStatus.OK);
+        if (empresa != null)
+            return new ResponseEntity<>(modelMapper.toModel(empresa), HttpStatus.OK);
+        else
+            return ResponseEntity.notFound().build();
     }
 
     @PutMapping("/{id}")
