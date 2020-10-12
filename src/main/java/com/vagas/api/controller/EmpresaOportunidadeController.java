@@ -52,13 +52,17 @@ public class EmpresaOportunidadeController {
     public ResponseEntity<OportunidadeModel> salvar(@RequestBody @Valid OportunidadeInput oportunidadeInput,
                                                     @PathVariable Long empresaId) {
         Oportunidade oportunidadeSalva = oportunidadeService.salvar(modelMapper.toDomainObject(oportunidadeInput), empresaId);
-        return new ResponseEntity<>(modelMapper.toModel(oportunidadeSalva), HttpStatus.OK);
+        return new ResponseEntity<>(modelMapper.toModel(oportunidadeSalva), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<OportunidadeModel> findById(@PathVariable("id") Long id) {
         Oportunidade oportunidade = oportunidadeService.buscarOuFalhar(id);
-        return new ResponseEntity<>(modelMapper.toModel(oportunidade), HttpStatus.OK);
+
+        if (oportunidade != null)
+            return new ResponseEntity<>(modelMapper.toModel(oportunidade), HttpStatus.OK);
+        else
+            return ResponseEntity.notFound().build();
     }
 
     @PutMapping("/{id}")

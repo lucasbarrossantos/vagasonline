@@ -48,13 +48,17 @@ public class UsuarioController {
     @PostMapping
     public ResponseEntity<UsuarioModel> salvar(@RequestBody @Valid UsuarioInput usuarioInput) {
         Usuario salvarSalvo = usuarioService.salvar(modelMapper.toDomainObject(usuarioInput));
-        return new ResponseEntity<>(modelMapper.toModel(salvarSalvo), HttpStatus.OK);
+        return new ResponseEntity<>(modelMapper.toModel(salvarSalvo), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioModel> findById(@PathVariable("id") Long id) {
         Usuario usuario = usuarioService.buscarOuFalhar(id);
-        return new ResponseEntity<>(modelMapper.toModel(usuario), HttpStatus.OK);
+
+        if (usuario != null)
+            return new ResponseEntity<>(modelMapper.toModel(usuario), HttpStatus.OK);
+        else
+            return ResponseEntity.notFound().build();
     }
 
     @PutMapping("/{id}")

@@ -43,7 +43,6 @@ public class MockFactory {
         empresa.setLongitude("-2");
         empresa.setSite("www.teste.com.br");
         empresa.setTelefone("(87)9 9999-9999");
-        empresa.setOportunidades(Collections.singleton(getOportunidade()));
         empresa.setEndereco(getEndereco());
         return empresa;
     }
@@ -70,6 +69,7 @@ public class MockFactory {
         endereco.setCidade("Cidade teste");
         endereco.setLogradouro("Logradouro teste");
         endereco.setComplemento("Complemento teste");
+        endereco.setNumero("20");
         return endereco;
     }
 
@@ -94,6 +94,7 @@ public class MockFactory {
         endereco.setCidade("Cidade teste");
         endereco.setLogradouro("Logradouro teste");
         endereco.setComplemento("Complemento teste");
+        endereco.setNumero("20");
         return endereco;
     }
 
