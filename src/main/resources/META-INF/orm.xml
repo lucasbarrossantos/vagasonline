@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings
+        xmlns="http://xmlns.jcp.org/xml/ns/persistence/orm"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/orm_2_2.xsd"
+        version="2.2">
+
+    <!-- Recupera um endereço por um id de empresa -->
+    <named-query name="Empresa.enderecoPorEmpresaId">
+        <query>
+            SELECT e.endereco FROM Empresa e WHERE e.id = :empresaId
+        </query>
+    </named-query>
+
+</entity-mappings>
