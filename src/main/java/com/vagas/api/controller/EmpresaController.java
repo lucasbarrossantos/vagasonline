@@ -66,7 +66,7 @@ public class EmpresaController {
                                                   @RequestBody @Valid EmpresaInput empresaInput) {
         Empresa empresa = empresaService.buscarOuFalhar(id);
         modelMapper.copyToDomainObject(empresaInput, empresa);
-        Empresa empresaAtualizada = empresaService.update(empresaInput, empresa);
+        Empresa empresaAtualizada = empresaService.update(empresa);
         return new ResponseEntity<>(modelMapper.toModel(empresaAtualizada), HttpStatus.OK);
     }
 

@@ -2,10 +2,7 @@ package com.vagas.api.mock;
 
 import com.vagas.api.model.BeneficioModel;
 import com.vagas.api.model.input.*;
-import com.vagas.domain.model.Beneficio;
-import com.vagas.domain.model.Empresa;
-import com.vagas.domain.model.Endereco;
-import com.vagas.domain.model.Oportunidade;
+import com.vagas.domain.model.*;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -115,4 +112,21 @@ public class MockFactory {
         return empresa;
     }
 
+    public Usuario getUsuario() {
+        Usuario usuario = new Usuario();
+        usuario.setEmail("lucas.barros.santos@email.com");
+        usuario.setIsAtivo(true);
+        usuario.setLogin("lucas.barros");
+        return usuario;
+    }
+
+    public UsuarioInput getUsuarioInput() {
+        UsuarioInput usuario = new UsuarioInput();
+        usuario.setEmail("lucas.barros.santos@email.com");
+        usuario.setIsAtivo(true);
+        usuario.setLogin("lucas.barros");
+        usuario.setSenha("123");
+        usuario.setConfirmarSenha("123");
+        return usuario;
+    }
 }

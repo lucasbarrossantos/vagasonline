@@ -112,11 +112,6 @@ class BeneficioControllerTest {
         beneficioSalvoMock.setDescricao("Beneficio atualizado");
         beneficioSalvoMock.setId(1L);
 
-        BeneficioModel beneficioModel = new BeneficioModel();
-        beneficioModel.setId(1L);
-        beneficioModel.setTitulo("Teste");
-        beneficioModel.setDescricao("Teste");
-
         BeneficioInput beneficioInputMock = mockFactory.getBeneficioInput();
         HttpEntity<BeneficioInput> request = new HttpEntity<>(beneficioInputMock);
 

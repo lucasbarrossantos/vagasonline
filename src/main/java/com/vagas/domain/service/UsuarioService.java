@@ -65,7 +65,7 @@ public class UsuarioService {
     }
 
     @Transactional
-    public Usuario update(UsuarioInput usuarioInput, Usuario usuario) {
+    public Usuario update(Usuario usuario) {
         return salvar(usuario);
     }
 

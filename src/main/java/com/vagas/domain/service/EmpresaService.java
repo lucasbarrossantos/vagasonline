@@ -42,7 +42,7 @@ public class EmpresaService {
     }
 
     @Transactional
-    public Empresa update(EmpresaInput empresaInput, Empresa empresa) {
+    public Empresa update(Empresa empresa) {
         return salvar(empresa);
     }
 

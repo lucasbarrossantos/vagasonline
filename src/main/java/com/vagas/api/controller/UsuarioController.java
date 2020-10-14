@@ -66,7 +66,7 @@ public class UsuarioController {
                                                   @RequestBody @Valid UsuarioInput usuarioInput) {
         Usuario usuario = usuarioService.buscarOuFalhar(id);
         modelMapper.copyToDomainObject(usuarioInput, usuario);
-        Usuario usuarioAtualizado = usuarioService.update(usuarioInput, usuario);
+        Usuario usuarioAtualizado = usuarioService.update(usuario);
         return new ResponseEntity<>(modelMapper.toModel(usuarioAtualizado), HttpStatus.OK);
     }
 
