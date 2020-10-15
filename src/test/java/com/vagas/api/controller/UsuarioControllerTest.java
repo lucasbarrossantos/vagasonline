@@ -2,11 +2,8 @@ package com.vagas.api.controller;
 
 import com.google.gson.Gson;
 import com.vagas.api.mock.MockFactory;
-import com.vagas.api.model.BeneficioModel;
 import com.vagas.api.model.UsuarioModel;
-import com.vagas.api.model.input.BeneficioInput;
 import com.vagas.api.model.input.UsuarioInput;
-import com.vagas.domain.model.Beneficio;
 import com.vagas.domain.model.Usuario;
 import com.vagas.domain.service.UsuarioService;
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +22,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.Collections;
 import java.util.Objects;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -109,8 +105,6 @@ public class UsuarioControllerTest {
     @Test
     @DisplayName("Deve atualizar um usuário e retornar 200!")
     void deveAtualizarUmUsuarioERetornar200() {
-        Usuario usuarioMock = mockFactory.getUsuario();
-
         Usuario usuarioSalvoMock = mockFactory.getUsuario();
         usuarioSalvoMock.setId(1L);
 

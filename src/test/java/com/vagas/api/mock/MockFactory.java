@@ -117,6 +117,8 @@ public class MockFactory {
         usuario.setEmail("lucas.barros.santos@email.com");
         usuario.setIsAtivo(true);
         usuario.setLogin("lucas.barros");
+        usuario.setSenha("123");
+        usuario.setConfirmarSenha("123");
         return usuario;
     }
 

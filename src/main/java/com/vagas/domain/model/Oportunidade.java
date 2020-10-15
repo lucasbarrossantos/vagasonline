@@ -1,5 +1,6 @@
 package com.vagas.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -21,6 +22,7 @@ public class Oportunidade {
     private String titulo;
     private String descricao;
     private String localTrabalho;
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone="GMT")
     private LocalDate dataCriacao = LocalDate.now();
     private LocalDate dataEncerramento;
 

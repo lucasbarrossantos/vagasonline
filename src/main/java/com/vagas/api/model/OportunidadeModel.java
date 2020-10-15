@@ -2,6 +2,7 @@ package com.vagas.api.model;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,7 +14,9 @@ public class OportunidadeModel {
 	private String titulo;
     private String descricao;
     private String localTrabalho;
-    private LocalDate dataCriacao = LocalDate.now();
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", locale = "pt-BR", timezone = "Brazil/East")
+    private LocalDate dataCriacao;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", locale = "pt-BR", timezone = "Brazil/East")
     private LocalDate dataEncerramento;
 	
 }
